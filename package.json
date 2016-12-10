@@ -1,0 +1,15 @@
+{
+  "name": "mms",
+  "version": "1.0.0",
+  "description": "Mars Message System",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.2",
+    "moment": "^2.17.1"
+  }
+}
