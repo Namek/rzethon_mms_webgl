@@ -6,7 +6,7 @@ const
   CAMERA_ZOOM_SPEED = 1000,
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.0001,
-  MESSAGE_RADIUS = 78*100
+  MESSAGE_RADIUS = 20
 
 let container
 let camera, scene, renderer
@@ -182,6 +182,12 @@ function preloadTextures() {
   return Promise.all(promises)
 }
 
+function lerpPos(outPos, pos1, pos2, factor) {
+  outPos.x = pos1.x + (pos2.x - pos1.x) * factor
+  outPos.y = pos1.y + (pos2.y - pos1.y) * factor
+  outPos.z = pos1.z + (pos2.z - pos1.z) * factor
+}
+
 function init() {
   container = document.getElementById('container')
 
@@ -210,7 +216,7 @@ function init() {
       {name: "mars1", location: {x: marsPos.x, y: marsPos.y, z: marsPos.z}}
     ],
     lastReport: {
-      name: 'mars1',
+      name: 'earth1',
       time: 1481397639
     },
     speedFactor: 10,
@@ -221,6 +227,9 @@ function init() {
   let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 20, 20)
   let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
   let mesh = new THREE.Mesh(geometry, material)
+  lerpPos(mesh.position, earthPos, marsPos, 0.5)                                                                                                                                                                                                                                                                       
+
+  group.add(mesh)
 
   state.msgs.push({
     mesh,
