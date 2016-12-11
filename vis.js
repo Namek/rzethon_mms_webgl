@@ -6,7 +6,7 @@ const
   CAMERA_ZOOM_SPEED = 0.02,
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.000001,
-  MESSAGE_RADIUS = 0.00001,
+  MESSAGE_RADIUS = 0.01,
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT /*km per sec*/
 
@@ -159,6 +159,41 @@ let $otherBodies = [
 preloadTextures().then(() => {
   init()
   animate()
+
+  setTimeout(() => {
+    let earthPos = _.find(state.msgNodes, {id: 'earth'}).mesh.position
+    let marsPos = _.find(state.msgNodes, {id: 'mars'}).mesh.position
+    let venusPos = _.find(state.msgNodes, {id: 'venus'}).mesh.position
+
+    let data = {
+      id: "fjiof-fjioef-fejioef-fejio-fejio",
+      path: [
+        {name: "earth1", location: {x: earthPos.x, y: earthPos.y, z: earthPos.z}},
+        {name: "mars1", location: {x: marsPos.x, y: marsPos.y, z: marsPos.z}},
+        {name: "venus1", location: {x: venusPos.x, y: venusPos.y, z: venusPos.z}}
+      ],
+      lastReport: {
+        name: 'earth1',
+        time: null//to be calculated
+      },
+      speedFactor: 100,
+      estimatedArrivalTime: 0 // to be calculated
+    }
+
+    let earthToMarsDist = distance(data.path[0].location, data.path[1].location)
+    let marsToVenusDist = distance(data.path[1].location, data.path[2].location)
+    let totalDist = earthToMarsDist + marsToVenusDist
+
+    let earthToMarsTime = earthToMarsDist / (LIGHT_SPEED_AU*data.speedFactor) * 1000
+    let flyTime = totalDist / LIGHT_SPEED_AU * 1000
+
+    data.lastReport.time = (new Date().getTime()) - earthToMarsTime/2
+    // lastBackendData.estimatedArrivalTime = new Date().getTime() + flyTime/2
+
+    onWebSocketData({
+      message: data
+    })
+  }, 2000)
 })
 
 function loadTexture(filename) {
@@ -198,6 +233,10 @@ function distance(pos1, pos2) {
   return Math.sqrt(dx*dx + dy*dy + dz*dz)
 }
 
+function pointToVector3(p) {
+  return new THREE.Vector3(p.x, p.y, p.z)
+}
+
 function init() {
   container = document.getElementById('container')
 
@@ -214,49 +253,6 @@ function init() {
   }
 
   updatePositions()
-
-  let earthPos = _.find(state.msgNodes, {id: 'earth'}).mesh.position
-  let marsPos = _.find(state.msgNodes, {id: 'mars'}).mesh.position
-  let venusPos = _.find(state.msgNodes, {id: 'venus'}).mesh.position
-
-  let lastBackendData = {
-    path: [
-      {name: "earth1", location: {x: earthPos.x, y: earthPos.y, z: earthPos.z}},
-      {name: "mars1", location: {x: marsPos.x, y: marsPos.y, z: marsPos.z}},
-      {name: "venus1", location: {x: venusPos.x, y: venusPos.y, z: venusPos.z}}
-    ],
-    lastReport: {
-      name: 'earth1',
-      time: null//to be calculated
-    },
-    speedFactor: 100,
-    estimatedArrivalTime: 0 // to be calculated
-  }
-
-  console.log(lastBackendData.path);
-
-  let earthToMarsDist = distance(lastBackendData.path[0].location, lastBackendData.path[1].location)
-  let marsToVenusDist = distance(lastBackendData.path[1].location, lastBackendData.path[2].location)
-  let totalDist = earthToMarsDist + marsToVenusDist
-  console.log(earthToMarsDist);
-  let earthToMarsTime = earthToMarsDist / (LIGHT_SPEED_AU*lastBackendData.speedFactor) * 1000
-  let flyTime = totalDist / LIGHT_SPEED_AU * 1000
-
-  lastBackendData.lastReport.time = (new Date().getTime()) - earthToMarsTime/2
-  // lastBackendData.estimatedArrivalTime = new Date().getTime() + flyTime/2
-
-  let texture = textures["Message.jpg"]
-  let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 20, 20)
-  let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
-  let mesh = new THREE.Mesh(geometry, material)
-  // lerpPos(mesh.position, earthPos, marsPos, 0.5)
-
-  scene.add(mesh)
-
-  state.msgs.push({
-    mesh,
-    lastBackendData
-  })
 
   for (let body of $otherBodies) {
     initCelestialBody(body, false)
@@ -291,6 +287,48 @@ function initCelestialBody(params, isMsgNode = false) {
   }
 
   return node
+}
+
+function onWebSocketData(evt) {
+  let msg = _.find(state.msgs, {id: evt.message.id})
+  let isNewMsg = !msg
+
+  if (isNewMsg) {
+    msg = evt.message
+    console.log(msg);
+
+    let texture = textures["Message.jpg"]
+    let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 20, 20)
+    let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
+    let mesh = new THREE.Mesh(geometry, material)
+    // lerpPos(mesh.position, earthPos, marsPos, 0.5)
+
+    scene.add(mesh)
+
+    state.msgs.push({
+      mesh,
+      lastBackendData: msg
+    })
+
+    // now render lines!!111111 elo 3 2 0
+    for (let nodeIndex = 0; nodeIndex < msg.path.length-1; ++nodeIndex) {
+      let curNode = msg.path[nodeIndex]
+      let nextNode = msg.path[nodeIndex+1]
+
+      geometry = new THREE.Geometry()
+      geometry.vertices.push(
+        pointToVector3(curNode.location),
+        pointToVector3(nextNode.location)
+      )
+      geometry.colors = [new THREE.Color( 0x666666 ), new THREE.Color( 0x666666 )]
+      material = new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 1, linewidth: 2, vertexColors: THREE.VertexColors } );
+      let line = new THREE.Line(geometry, material)
+      scene.add(line)
+    }
+  }
+  else {
+    // TODO update msg!
+  }
 }
 
 function render() {
@@ -477,21 +515,7 @@ function unixTimeToDayFraction(u) {
 const DIFF_2000_1970 = moment('2000-01-01').diff('1970-01-01', 'ms') - 3600000 - 86400000
 function dayFractionToUnixTime(d) {
   return Math.floor(d * DAY_MILLISECONDS + DIFF_2000_1970)
-  // TODO coś tu źle jest :(
 }
-
-let ut = new Date().getTime()
-let df = unixTimeToDayFraction(ut)
-
-console.log(ut);
-console.log(df)
-console.log(dayFractionToUnixTime(df))
-
-// console.log(
-//   dayFractionToUnixTime(0),  moment('2000-01-01').unix()*1000,
-//   dayFractionToUnixTime(0) - moment('2000-01-01').unix()*1000
-// )
-
 
 function getOrbitals(planet, d) {
   const o = $orbitals[planet]
