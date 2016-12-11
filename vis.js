@@ -7,12 +7,12 @@ const
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.0000004,
   MESSAGE_RADIUS = 0.04,
-  NODE_RADIUS = 0.11,
+  NODE_RADIUS = 0.05,
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT, /*km per sec*/
   SIM_FETCH_INTERVAL = 5000,
-  // BACKEND_URL = 'http://192.168.1.147:3001'
-  BACKEND_URL = 'http://192.168.2.106:3000'
+  BACKEND_URL = 'http://192.168.1.147:3001'
+  // BACKEND_URL = 'http://192.168.2.106:3000'
 
 let container
 let camera, scene, renderer
@@ -54,7 +54,9 @@ let state = {
        }
      }
     */
-  ]
+  ],
+  isLeftMouseButtonDown: false,
+  isArrowDownDown: false
 }
 
   /**
@@ -294,14 +296,22 @@ function init() {
   container.appendChild(renderer.domElement)
 
   document.addEventListener('keydown', onKeyDown, false)
+  document.addEventListener('keyup', onKeyUp, false)
   document.addEventListener('mousemove', onDocumentMouseMove, false)
+  document.addEventListener('mousedown', onDocumentMouseDown, false)
+  document.addEventListener('mouseup', onDocumentMouseUp, false)
+  document.addEventListener('mouseleave', onDocumentMouseLeave, false)
   document.addEventListener('mousewheel', onDocumentMouseWheel, false)
   window.addEventListener('resize', onWindowResize, false)
 
   fetch(`${BACKEND_URL}/nodes`).then(res => {
     res.json().then(json => {
       for (let node of json.nodes) {
-        const loc = node.location
+        const loc = {
+          x: node.location_x,
+          y: node.location_y,
+          z: node.location_z
+        }
 
         let texture = textures["Node.png"]
         let geometry = new THREE.SphereGeometry(NODE_RADIUS, 40, 40)
@@ -478,11 +488,15 @@ function render() {
 
   updatePositions()
 
+  if (state.isLeftMouseButtonDown) {
+    camera.position.x -= (mouseX - camera.position.x) * 0.0001
+    camera.position.y -= (mouseY - camera.position.y) * 0.0001
 
-  // camera.position.x += (mouseX - camera.position.x) * 0.05
-  // camera.position.y += (- mouseY - camera.position.y) * 0.05
-  camera.lookAt(scene.position)
-  camera.updateProjectionMatrix()
+    if (state.isArrowDownDown)
+      camera.lookAt(scene.position)
+
+    camera.updateProjectionMatrix()
+  }
 
   renderer.render(scene, camera)
 }
@@ -504,15 +518,37 @@ function onKeyDown(evt) {
   else if (evt.key == 'p') {
     state.timeFactor *= 10
   }
-  else if (evt.key == 's')
+  else if (evt.key == 's') {
     viewState.enablePlanetScaling = !viewState.enablePlanetScaling
+  }
+  else if (evt.keyCode === 40/*arrow down*/) {
+    state.isArrowDownDown = true
+  }
 
   state.timeFactor = Math.max(1, state.timeFactor)
+}
+
+function onKeyUp(evt) {
+  if (evt.keyCode === 40/*arrow down*/) {
+    state.isArrowDownDown = false
+  }
 }
 
 function onDocumentMouseMove(evt) {
   mouseX = (evt.clientX - windowHalfX)
   mouseY = (evt.clientY - windowHalfY)
+}
+
+function onDocumentMouseDown(evt) {
+  state.isLeftMouseButtonDown = true
+}
+
+function onDocumentMouseUp(evt) {
+  state.isLeftMouseButtonDown = false
+}
+
+function onDocumentMouseLeave(evt) {
+  state.isLeftMouseButtonDown = false
 }
 
 function onDocumentMouseWheel(evt) {
