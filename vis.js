@@ -229,7 +229,7 @@ function init() {
       name: 'earth1',
       time: null//to be calculated
     },
-    speedFactor: 1,
+    speedFactor: 100,
     estimatedArrivalTime: 0 // to be calculated
   }
 
@@ -239,10 +239,10 @@ function init() {
   let marsToVenusDist = distance(lastBackendData.path[1].location, lastBackendData.path[2].location)
   let totalDist = earthToMarsDist + marsToVenusDist
   console.log(earthToMarsDist);
-  let earthToMarsTime = earthToMarsDist / LIGHT_SPEED_AU * 1000
+  let earthToMarsTime = earthToMarsDist / (LIGHT_SPEED_AU*lastBackendData.speedFactor) * 1000
   let flyTime = totalDist / LIGHT_SPEED_AU * 1000
 
-  lastBackendData.lastReport.time = (new Date().getTime()) - earthToMarsTime/3
+  lastBackendData.lastReport.time = (new Date().getTime()) - earthToMarsTime/2
   // lastBackendData.estimatedArrivalTime = new Date().getTime() + flyTime/2
 
   let texture = textures["Message.jpg"]
