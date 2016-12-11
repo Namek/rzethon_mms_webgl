@@ -318,33 +318,15 @@ function initCelestialBody(params, isMsgNode = false) {
   scene.add(textMesh)*/
 
   // orb
-  const D = 0.1
-  let numPoints = Math.floor(orbDays / D)
-  let pointsGeo = new THREE.BufferGeometry()
-  let positions = new Float32Array(numPoints * 3);
-  let colors = new Float32Array(numPoints * 3);
-  let color = new THREE.Color()
-  color.setRGB(1,1,1)
-
+  const D = 1
+  geometry = new THREE.Geometry()
+  material = new THREE.LineBasicMaterial({ color: 0xFFFFFF })
   for (let d = 0, i = 0; d < orbDays; d += D, i += 3) {
     let pos = {x: 0, y: 0, z: 0}
     calcNodePosition(pos, id, d)
-    positions[i] = pos.x
-    positions[i+1] = pos.y
-    positions[i+2] = pos.z
-
-    colors[i]   = color.r
-    colors[i+1] = color.g
-    colors[i+2] = color.b
+    geometry.vertices.push(new THREE.Vector3(pos.x, pos.y, pos.z))
   }
-
-  geometry = new THREE.BufferGeometry();
-  geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-  geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
-  geometry.computeBoundingSphere();
-  material = new THREE.PointsMaterial( { size: 0.01, vertexColors: THREE.VertexColors } );
-  let points = new THREE.Points( geometry, material );
-  scene.add( points );
+  scene.add(new THREE.Line(geometry, material))
 
   scene.add(mesh)
 
