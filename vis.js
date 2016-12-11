@@ -72,91 +72,91 @@ let state = {
 
 
 let $orbitals = {
-      'mercury': {
-        'n' : [48.3313, 3.24587E-5],
-        'i' : [7.0047, 5.00E-8],
-        'w' : [29.1241, 1.01444E-5],
-        'a' : [0.387098, 0],
-        'e' : [0.205635, 5.59E-10],
-        'm' : [168.6562, 4.0923344368]
-      },
-      'venus' : {
-        'n' : [76.6799, 2.46590E-5],
-        'i' : [3.3946, 2.75E-8],
-        'w' : [54.8910, 1.38374E-5],
-        'a' : [0.723330, 0],
-        'e' : [0.006773, 1.302E-9],
-        'm' : [48.0052, 1.6021302244]
-      },
-      'earth' : {
-        'n' : [0.0, 0],
-        'i' : [0.0, 0],
-        'w' : [282.9404, 4.70935e-5],
-        'a' : [1.0, 0],
-        'e' : [0.016709, 1.151e-9],
-        'm' : [356.0470, 0.9856002585]
-      },
-      'mars' : {
-        'n' : [49.5574, 2.11081e-5],
-        'i' : [1.8497, 1.78e-8],
-        'w' : [286.5016, 2.92961e-5],
-        'a' : [1.523688, 0],
-        'e' : [0.093405, 2.516e-9],
-        'm' : [18.6021, 0.5240207766]
-      },
-      'jupiter' : {
-        'n' : [100.4542, 2.76854E-5],
-        'i' : [1.3030, 1.557E-7],
-        'w' : [273.8777, 1.64505E-5],
-        'a' : [5.20256, 0],
-        'e' : [0.048498, 4.469E-9],
-        'm' : [ 19.8950, 0.0830853001]
-      },
-      'saturn' : {
-        'n' : [113.6634, 2.38980E-5],
-        'i' : [2.4886, 1.081E-7],
-        'w' : [339.3939, 2.97661E-5],
-        'a' : [9.55475, 0],
-        'e' : [0.055546, 9.499E-9],
-        'm' : [316.9670, 0.0334442282]
-      },
-      'uranus' : {
-        'n' : [74.0005, 1.3978E-5],
-        'i' : [0.7733, 1.9E-8],
-        'w' : [96.6612, 3.0565E-5],
-        'a' : [19.18171, 1.55E-8],
-        'e' : [0.047318, 7.45E-9],
-        'm' : [142.5905, 0.011725806]
-      },
-      'neptune' : {
-        'n' : [131.7806, 3.0173E-5],
-        'i' : [1.7700, 2.55E-7],
-        'w' : [272.8461, 6.027E-6],
-        'a' : [30.05826, 3.313E-8],
-        'e' : [0.008606, 2.15E-9],
-        'm' : [260.2471, 0.005995147]
-      }
+  'mercury': {
+    'n' : [48.3313, 3.24587E-5],
+    'i' : [7.0047, 5.00E-8],
+    'w' : [29.1241, 1.01444E-5],
+    'a' : [0.387098, 0],
+    'e' : [0.205635, 5.59E-10],
+    'm' : [168.6562, 4.0923344368]
+  },
+  'venus' : {
+    'n' : [76.6799, 2.46590E-5],
+    'i' : [3.3946, 2.75E-8],
+    'w' : [54.8910, 1.38374E-5],
+    'a' : [0.723330, 0],
+    'e' : [0.006773, 1.302E-9],
+    'm' : [48.0052, 1.6021302244]
+  },
+  'earth' : {
+    'n' : [0.0, 0],
+    'i' : [0.0, 0],
+    'w' : [282.9404, 4.70935e-5],
+    'a' : [1.0, 0],
+    'e' : [0.016709, 1.151e-9],
+    'm' : [356.0470, 0.9856002585]
+  },
+  'mars' : {
+    'n' : [49.5574, 2.11081e-5],
+    'i' : [1.8497, 1.78e-8],
+    'w' : [286.5016, 2.92961e-5],
+    'a' : [1.523688, 0],
+    'e' : [0.093405, 2.516e-9],
+    'm' : [18.6021, 0.5240207766]
+  },
+  'jupiter' : {
+    'n' : [100.4542, 2.76854E-5],
+    'i' : [1.3030, 1.557E-7],
+    'w' : [273.8777, 1.64505E-5],
+    'a' : [5.20256, 0],
+    'e' : [0.048498, 4.469E-9],
+    'm' : [ 19.8950, 0.0830853001]
+  },
+  'saturn' : {
+    'n' : [113.6634, 2.38980E-5],
+    'i' : [2.4886, 1.081E-7],
+    'w' : [339.3939, 2.97661E-5],
+    'a' : [9.55475, 0],
+    'e' : [0.055546, 9.499E-9],
+    'm' : [316.9670, 0.0334442282]
+  },
+  'uranus' : {
+    'n' : [74.0005, 1.3978E-5],
+    'i' : [0.7733, 1.9E-8],
+    'w' : [96.6612, 3.0565E-5],
+    'a' : [19.18171, 1.55E-8],
+    'e' : [0.047318, 7.45E-9],
+    'm' : [142.5905, 0.011725806]
+  },
+  'neptune' : {
+    'n' : [131.7806, 3.0173E-5],
+    'i' : [1.7700, 2.55E-7],
+    'w' : [272.8461, 6.027E-6],
+    'a' : [30.05826, 3.313E-8],
+    'e' : [0.008606, 2.15E-9],
+    'm' : [260.2471, 0.005995147]
   }
+}
 
-let textures = {}
+let textures = {}, fonts = {}
 
 // planets: id, textureUrl, diameter (km), scale
 let $planets = [
-  ['mercury', 'Mercury.jpg', 4900, 50],
-  ['venus', 'Venus.jpg', 12100, 30],
-  ['earth', 'land_ocean_ice_cloud_2048.jpg', 12800, 50],
-  ['mars', 'Mars.jpg', 6800, 50],
-  ['jupiter', 'Jupiter.jpg', 143000, 10],
-  ['saturn', 'Saturn.jpg', 125000, 50],
-  ['uranus', 'Uranus.jpg', 51100, 10],
-  ['neptune', 'Neptune.jpg', 49500, 10]
+  ['mercury', "Mercury", 'Mercury.jpg', 4900, 50],
+  ['venus', "Venus", 'Venus.jpg', 12100, 30],
+  ['earth', "Earth", 'land_ocean_ice_cloud_2048.jpg', 12800, 50],
+  ['mars', "Mars", 'Mars.jpg', 6800, 50],
+  ['jupiter', "Jupilter", 'Jupiter.jpg', 143000, 10],
+  ['saturn', "Saturn", 'Saturn.jpg', 125000, 50],
+  ['uranus', "Uranus", 'Uranus.jpg', 51100, 10],
+  ['neptune', "Neptune", 'Neptune.jpg', 49500, 10]
 ]
 
 let $otherBodies = [
-  ['sun', 'Sun.jpg', 1391400/5]
+  ['sun', "Sun", 'Sun.jpg', 1391400/5]
 ]
 
-preloadTextures().then(() => {
+preloadAssets().then(() => {
   init()
   animate()
 
@@ -207,13 +207,26 @@ function loadTexture(filename) {
   })
 }
 
-function preloadTextures() {
+function loadFont(filename) {
+  return new Promise((resolve, reject) => {
+    let url = `assets/${filename}`
+    let loader = new THREE.FontLoader()
+    loader.load(url, font => {
+      fonts[filename] = font
+      resolve()
+    })
+  })
+}
+
+function preloadAssets() {
   let promises = []
   for (let body of $planets) {
-    promises.push(loadTexture(body[1]))
+    promises.push(loadTexture(body[2]))
   }
   promises.push(loadTexture('Sun.jpg'))
   promises.push(loadTexture('Message.jpg'))
+
+  promises.push(loadFont('droid_sans_regular.typeface.json'))
 
   return Promise.all(promises)
 }
@@ -271,13 +284,39 @@ function init() {
 }
 
 function initCelestialBody(params, isMsgNode = false) {
-  const [id, textureFilename, diameter, scale] = params
+  const [id, name, textureFilename, diameter, scale] = params
   let texture = textures[textureFilename]
   let geometry = new THREE.SphereGeometry(PLANET_RADIUS_SCALE * diameter /* scale*/, 20, 20)
   let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
   let mesh = new THREE.Mesh(geometry, material)
-
   scene.add(mesh)
+/*
+  let textGeo = new THREE.TextGeometry(name, {
+    font: fonts['droid_sans_regular.typeface.json'],
+    size: 1,
+    height: 1,
+    curveSegments: 1,
+    bevelThickness: 0,
+    bevelSize: 1.5,
+    bevelEnabled: false,
+    material: 0,
+    extrudeMaterial: 1
+  })
+  textGeo.computeBoundingBox()
+  textGeo.computeVertexNormals()
+
+  let textMesh = new THREE.Mesh(textGeo, material)
+  let centerOffset = -0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x)
+
+  setTimeout(() => {
+    textMesh.position.x = mesh.position.x + centerOffset
+    textMesh.position.y = mesh.position.y
+    textMesh.position.z = mesh.position.z + -30
+    console.log(textMesh.position);
+
+  }, 0)
+
+  scene.add(textMesh)*/
 
   let node = null
 
@@ -298,7 +337,7 @@ function onWebSocketData(evt) {
     console.log(msg);
 
     let texture = textures["Message.jpg"]
-    let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 20, 20)
+    let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 40, 40)
     let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
     let mesh = new THREE.Mesh(geometry, material)
     // lerpPos(mesh.position, earthPos, marsPos, 0.5)
