@@ -7,6 +7,7 @@ const
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.0000004,
   MESSAGE_RADIUS = 0.04,
+  NODE_RADIUS = 0.14,
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT /*km per sec*/
 
@@ -226,6 +227,7 @@ function preloadAssets() {
   }
   promises.push(loadTexture('Sun.jpg'))
   promises.push(loadTexture('Message.jpg'))
+  promises.push(loadTexture('Node.png'))
 
   // background
   promises.push(loadTexture('background/Space.jpg'))
@@ -289,6 +291,27 @@ function init() {
   document.addEventListener('mousemove', onDocumentMouseMove, false)
   document.addEventListener('mousewheel', onDocumentMouseWheel, false)
   window.addEventListener('resize', onWindowResize, false)
+
+  fetch('http://192.168.2.106:3000/nodes').then(res => {
+    res.json().then(json => {
+      for (let node of json.nodes) {
+        const loc = node.location
+
+        let texture = textures["Node.png"]
+        let geometry = new THREE.SphereGeometry(NODE_RADIUS, 40, 40)
+        let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
+        let mesh = new THREE.Mesh(geometry, material)
+        mesh.position.x = loc.x
+        mesh.position.y = loc.y
+        mesh.position.z = loc.z
+        scene.add(mesh)
+      }
+    })
+  })
+
+  fetch('http://192.168.2.106:3000/simulations').then(res => {
+    res.json().then(json => console.log(json))
+  })
 }
 
 function initBackground() {
@@ -383,7 +406,6 @@ function onWebSocketData(evt) {
 
   if (isNewMsg) {
     msg = evt.message
-    console.log(msg);
 
     let texture = textures["Message.jpg"]
     let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 40, 40)
