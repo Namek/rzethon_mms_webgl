@@ -6,7 +6,9 @@ const
   CAMERA_ZOOM_SPEED = 1000,
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.0001,
-  MESSAGE_RADIUS = 20
+  MESSAGE_RADIUS = 20,
+  ASTRONOMICAL_UNIT = 149597870.7, //km
+  LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT /*km per sec*/
 
 let container
 let camera, scene, renderer
@@ -22,8 +24,8 @@ let viewState = {
 
 let state = {
   timeFactor: 1,
-  d: 0,
-  prevRenderTime: +new Date(),
+  d: unixTimeToDayFraction(new Date().getTime()),
+  prevRenderTime: new Date().getTime(),
   msgNodes: [
     /* id, mesh */
   ],
@@ -188,6 +190,15 @@ function lerpPos(outPos, pos1, pos2, factor) {
   outPos.z = pos1.z + (pos2.z - pos1.z) * factor
 }
 
+function distance(pos1, pos2) {
+  const
+    dx = pos2.x - pos1.x,
+    dy = pos2.y - pos1.y,
+    dz = pos2.z - pos1.z
+
+  return Math.sqrt(dx*dx + dy*dy + dz*dz)
+}
+
 function init() {
   container = document.getElementById('container')
 
@@ -217,17 +228,23 @@ function init() {
     ],
     lastReport: {
       name: 'earth1',
-      time: 1481397639
+      time: new Date().getTime()-1000*60*60
     },
-    speedFactor: 10,
-    estimatedArrivalTime: 1481397639+1000000
+    speedFactor: 1,
+    estimatedArrivalTime: 0 // to be calculated
   }
+
+
+  let flyTime = distance(lastBackendData.path[0].location, lastBackendData.path[1].location)
+    / LIGHT_SPEED_AU * 1000
+  lastBackendData.lastReport.time = new Date().getTime() - flyTime/3
+  lastBackendData.estimatedArrivalTime = new Date().getTime()+1000*60*60
 
   let texture = textures["Message.jpg"]
   let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 20, 20)
   let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
   let mesh = new THREE.Mesh(geometry, material)
-  lerpPos(mesh.position, earthPos, marsPos, 0.5)                                                                                                                                                                                                                                                                       
+  lerpPos(mesh.position, earthPos, marsPos, 0.5)
 
   group.add(mesh)
 
@@ -272,7 +289,7 @@ function initCelestialBody(params, isMsgNode = false) {
 }
 
 function render() {
-  const curTime = +new Date()
+  const curTime = new Date().getTime()
   const prevTime = state.prevRenderTime
   const deltaTime = (curTime - prevTime)/1000
   state.d += (state.timeFactor * deltaTime)
@@ -338,8 +355,19 @@ function updatePositions() {
     updateNodePosition(node)
   }
 
-  for (let msg of state.msgs) {
-    // TODO
+  let indicesToRemove = []
+  for (let i = 0, n = state.msgs.length; i < n; ++i) {
+    let msg = state.msgs[i]
+    if (updateMessagePosition(msg))
+      indicesToRemove.push(i)
+  }
+  for (let i = indicesToRemove.length-1; i >= 0; --i) {
+    let msg = state.msgs[i]
+    let meshIndex = group.children.indexOf(msg.mesh)
+    console.log(meshIndex);
+    console.log(msg.mesh);
+    group.children.splice(group.children, meshIndex)
+    state.msgs.splice(i, 1)
   }
 }
 
@@ -370,6 +398,56 @@ function updateNodePosition(node) {
   mesh.position.z = zh*scale
 }
 
+/**
+ * @returns `true` if message has been delivered
+ * @param msg
+ */
+function updateMessagePosition(msg) {
+  let {mesh, lastBackendData} = msg
+  const data = lastBackendData
+  let curTime = dayFractionToUnixTime(state.d)
+
+  let lastReportNodeIndex = _.findIndex(data.path, {name: data.lastReport.name})
+  let wasDelivered = lastReportNodeIndex >= data.path.length - 1
+
+  let curNode, nextNode
+
+  if (wasDelivered) {
+    return true
+  }
+
+  let lastReportTime = data.lastReport.time
+  let curNodeIndex = lastReportNodeIndex
+
+  let distSinceLastReport = (curTime - lastReportTime)/1000 * lastBackendData.speedFactor * LIGHT_SPEED_AU
+  let distBetweenNodes = null
+
+  while (curNodeIndex < data.path.length-1) {
+    curNode = data.path[curNodeIndex]
+    nextNode = data.path[curNodeIndex+1]
+    distBetweenNodes = distance(curNode.location, nextNode.location)
+
+    if (distSinceLastReport - distBetweenNodes < 0) {
+      // `curNode` is the last node which should have been visited already now
+      break
+    }
+    else {
+      distSinceLastReport -= distBetweenNodes
+      ++curNodeIndex
+    }
+  }
+
+  let factorBetweenNodes = distSinceLastReport / distBetweenNodes
+
+  if (factorBetweenNodes > 1) {
+    return true
+  }
+
+  lerpPos(mesh.position, curNode.location, nextNode.location, factorBetweenNodes)
+
+  return false
+}
+
 /** integer division */
 function intDiv(a, b) {
   return Math.floor(a / b)
@@ -386,6 +464,11 @@ function unixTimeToDayFraction(u) {
   let dayMs = t.milliseconds() + 1000*(t.seconds() + 60*(t.minutes() + 60*(t.hours())))
   let dayFraction = dayMs / DAY_MILLISECONDS
   return d + dayFraction
+}
+
+const DIFF_2000_1970 = moment('2000-01-01').diff('1970-01-01', 'milliseconds')
+function dayFractionToUnixTime(d) {
+  return d*24*60*60*1000 + DIFF_2000_1970
 }
 
 console.log(unixTimeToDayFraction(1481382583000))
