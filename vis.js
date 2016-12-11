@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 const
   DAY_MILLISECONDS = 24 * 60 * 60 * 1000,
-  CAMERA_ZOOM_SPEED = 100,
+  CAMERA_ZOOM_SPEED = 0.02,
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.000001,
   MESSAGE_RADIUS = 0.00001,
@@ -328,13 +328,15 @@ function onWindowResize() {
 
 function onKeyDown(evt) {
   if (evt.key == 'o') {
-    state.timeFactor /= 2
+    state.timeFactor /= 10
   }
   else if (evt.key == 'p') {
-    state.timeFactor *= 2
+    state.timeFactor *= 10
   }
   else if (evt.key == 's')
     viewState.enablePlanetScaling = !viewState.enablePlanetScaling
+
+  state.timeFactor = Math.max(1, state.timeFactor)
 }
 
 function onDocumentMouseMove(evt) {
@@ -410,7 +412,7 @@ function updateNodePosition(node) {
 function updateMessagePosition(msg) {
   let {mesh, lastBackendData} = msg
   const data = lastBackendData
-  let curTime = new Date().getTime()// dayFractionToUnixTime(state.d)
+  let curTime = dayFractionToUnixTime(state.d)//new Date().getTime()// dayFractionToUnixTime(state.d)
 
   let lastReportNodeIndex = _.findIndex(data.path, {name: data.lastReport.name})
   let wasDelivered = lastReportNodeIndex >= data.path.length - 1
@@ -433,7 +435,7 @@ function updateMessagePosition(msg) {
     nextNode = data.path[curNodeIndex+1]
     distBetweenNodes = distance(curNode.location, nextNode.location)
 
-    if (distSinceProbableLastNode - distBetweenNodes < 0) {
+    if (distSinceProbableLastNode < distBetweenNodes) {
       // `curNode` is the last node which should have been visited already now
       break
     }
@@ -443,9 +445,9 @@ function updateMessagePosition(msg) {
     }
   }
 
-  let factorBetweenNodes = distSinceLastReport / distBetweenNodes
+  let factorBetweenNodes = distSinceProbableLastNode / distBetweenNodes
 
-  if (factorBetweenNodes > 1) {
+  if (factorBetweenNodes >= 1) {
     return true
   }
 
@@ -472,17 +474,23 @@ function unixTimeToDayFraction(u) {
   return d + dayFraction
 }
 
-const DIFF_2000_1970 = moment('2000-01-01').diff('1970-01-01', 'ms') - 3600000
+const DIFF_2000_1970 = moment('2000-01-01').diff('1970-01-01', 'ms') - 3600000 - 86400000
 function dayFractionToUnixTime(d) {
-  return d * DAY_MILLISECONDS + DIFF_2000_1970
+  return Math.floor(d * DAY_MILLISECONDS + DIFF_2000_1970)
   // TODO coś tu źle jest :(
 }
 
-// console.log(unixTimeToDayFraction(new Date().getTime()))
-console.log(
-  dayFractionToUnixTime(0),  moment('2000-01-01').unix()*1000,
-  dayFractionToUnixTime(0) - moment('2000-01-01').unix()*1000
-)
+let ut = new Date().getTime()
+let df = unixTimeToDayFraction(ut)
+
+console.log(ut);
+console.log(df)
+console.log(dayFractionToUnixTime(df))
+
+// console.log(
+//   dayFractionToUnixTime(0),  moment('2000-01-01').unix()*1000,
+//   dayFractionToUnixTime(0) - moment('2000-01-01').unix()*1000
+// )
 
 
 function getOrbitals(planet, d) {
