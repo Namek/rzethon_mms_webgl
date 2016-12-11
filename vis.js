@@ -3,9 +3,9 @@
 document.addEventListener('DOMContentLoaded', () => {
 const
   DAY_MILLISECONDS = 24 * 60 * 60 * 1000,
-  CAMERA_ZOOM_SPEED = 0.02,
+  CAMERA_ZOOM_SPEED = 0.04,
   CAMERA_MAX_ZOOM = 150,
-  PLANET_RADIUS_SCALE = 0.000001,
+  PLANET_RADIUS_SCALE = 0.0000004,
   MESSAGE_RADIUS = 0.01,
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT /*km per sec*/
@@ -142,14 +142,14 @@ let textures = {}, fonts = {}
 
 // planets: id, textureUrl, diameter (km), scale
 let $planets = [
-  ['mercury', "Mercury", 'Mercury.jpg', 4900, 50],
-  ['venus', "Venus", 'Venus.jpg', 12100, 30],
-  ['earth', "Earth", 'land_ocean_ice_cloud_2048.jpg', 12800, 50],
-  ['mars', "Mars", 'Mars.jpg', 6800, 50],
-  ['jupiter', "Jupilter", 'Jupiter.jpg', 143000, 10],
-  ['saturn', "Saturn", 'Saturn.jpg', 125000, 50],
-  ['uranus', "Uranus", 'Uranus.jpg', 51100, 10],
-  ['neptune', "Neptune", 'Neptune.jpg', 49500, 10]
+  ['mercury', "Mercury", 'Mercury.jpg', 4900, 50, 1000],
+  ['venus', "Venus", 'Venus.jpg', 12100, 30, 10000],
+  ['earth', "Earth", 'land_ocean_ice_cloud_2048.jpg', 12800, 50, 10000],
+  ['mars', "Mars", 'Mars.jpg', 6800, 50, 10000],
+  ['jupiter', "Jupilter", 'Jupiter.jpg', 143000, 10, 10000],
+  ['saturn', "Saturn", 'Saturn.jpg', 125000, 50, 10000],
+  ['uranus', "Uranus", 'Uranus.jpg', 51100, 10, 10000],
+  ['neptune', "Neptune", 'Neptune.jpg', 49500, 10, 10000]
 ]
 
 let $otherBodies = [
@@ -254,7 +254,7 @@ function init() {
   container = document.getElementById('container')
 
   camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 1, 2000)
-  camera.position.z = 1
+  camera.position.z = 1.5
   camera.far = 100000
   camera.near = 0.000001
   camera.updateProjectionMatrix()
@@ -271,10 +271,10 @@ function init() {
     initCelestialBody(body, false)
   }
 
-  renderer = new THREE.CanvasRenderer()
+  renderer = new THREE.WebGLRenderer({antialias: false})
   renderer.setClearColor(0)
   renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.setSize(window.innerWidth, window.innerHeight+1)
+  renderer.setSize(window.innerWidth, window.innerHeight)
   container.appendChild(renderer.domElement)
 
   document.addEventListener('keydown', onKeyDown, false)
@@ -284,12 +284,11 @@ function init() {
 }
 
 function initCelestialBody(params, isMsgNode = false) {
-  const [id, name, textureFilename, diameter, scale] = params
+  const [id, name, textureFilename, diameter, scale, orbDays] = params
   let texture = textures[textureFilename]
-  let geometry = new THREE.SphereGeometry(PLANET_RADIUS_SCALE * diameter /* scale*/, 20, 20)
+  let geometry = new THREE.SphereGeometry(PLANET_RADIUS_SCALE * diameter * scale, 20, 20)
   let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
   let mesh = new THREE.Mesh(geometry, material)
-  scene.add(mesh)
 /*
   let textGeo = new THREE.TextGeometry(name, {
     font: fonts['droid_sans_regular.typeface.json'],
@@ -317,6 +316,37 @@ function initCelestialBody(params, isMsgNode = false) {
   }, 0)
 
   scene.add(textMesh)*/
+
+  // orb
+  const D = 0.1
+  let numPoints = Math.floor(orbDays / D)
+  let pointsGeo = new THREE.BufferGeometry()
+  let positions = new Float32Array(numPoints * 3);
+  let colors = new Float32Array(numPoints * 3);
+  let color = new THREE.Color()
+  color.setRGB(1,1,1)
+
+  for (let d = 0, i = 0; d < orbDays; d += D, i += 3) {
+    let pos = {x: 0, y: 0, z: 0}
+    calcNodePosition(pos, id, d)
+    positions[i] = pos.x
+    positions[i+1] = pos.y
+    positions[i+2] = pos.z
+
+    colors[i]   = color.r
+    colors[i+1] = color.g
+    colors[i+2] = color.b
+  }
+
+  geometry = new THREE.BufferGeometry();
+  geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+  geometry.addAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+  geometry.computeBoundingSphere();
+  material = new THREE.PointsMaterial( { size: 0.01, vertexColors: THREE.VertexColors } );
+  let points = new THREE.Points( geometry, material );
+  scene.add( points );
+
+  scene.add(mesh)
 
   let node = null
 
@@ -457,8 +487,17 @@ function updatePositions() {
 
 function updateNodePosition(node) {
   let {mesh, id} = node
+  calcNodePosition(mesh.position, id, state.d)
 
-  let orbs = getOrbitals(id, state.d)
+  let scale = viewState.scale
+
+  mesh.position.x *= scale
+  mesh.position.y *= scale
+  mesh.position.z *= scale
+}
+
+function calcNodePosition(outPos, id, d) {
+  let orbs = getOrbitals(id, d)
 
   let
     {n,i,w,a,e,m} = orbs,
@@ -475,11 +514,9 @@ function updateNodePosition(node) {
     yh = r * ( Math.sin(n) * Math.cos(v+w) + Math.cos(n) * Math.sin(v+w) * Math.cos(i)),
     zh = r * ( Math.sin(v+w) * Math.sin(i) )
 
-  let scale = viewState.scale
-
-  mesh.position.x = xh*scale
-  mesh.position.y = yh*scale
-  mesh.position.z = zh*scale
+  outPos.x = xh
+  outPos.y = yh
+  outPos.z = zh
 }
 
 /**
