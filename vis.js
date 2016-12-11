@@ -271,7 +271,7 @@ function init() {
     initCelestialBody(body, false)
   }
 
-  renderer = new THREE.WebGLRenderer({antialias: false})
+  renderer = new THREE.WebGLRenderer({antialias: false, logarithmicDepthBuffer: true})
   renderer.setClearColor(0)
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.setSize(window.innerWidth, window.innerHeight)
