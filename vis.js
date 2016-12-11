@@ -7,9 +7,10 @@ const
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.0000004,
   MESSAGE_RADIUS = 0.04,
-  NODE_RADIUS = 0.14,
+  NODE_RADIUS = 0.11,
   ASTRONOMICAL_UNIT = 149597870.7, //km
-  LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT /*km per sec*/
+  LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT, /*km per sec*/
+  SIM_FETCH_INTERVAL = 5000
 
 let container
 let camera, scene, renderer
@@ -192,9 +193,9 @@ preloadAssets().then(() => {
     data.lastReport.time = (new Date().getTime())// - earthToMarsTime/2
     // lastBackendData.estimatedArrivalTime = new Date().getTime() + flyTime/2
 
-    onWebSocketData({
-      message: data
-    })
+    // onWebSocketData({
+    //   message: data
+    // })
   }, 1000)
 })
 
@@ -240,9 +241,9 @@ function preloadAssets() {
 }
 
 function lerpPos(outPos, pos1, pos2, factor) {
-  outPos.x = pos1.x + (pos2.x - pos1.x) * factor
-  outPos.y = pos1.y + (pos2.y - pos1.y) * factor
-  outPos.z = pos1.z + (pos2.z - pos1.z) * factor
+  outPos.x = +pos1.x + (+pos2.x - pos1.x) * factor
+  outPos.y = +pos1.y + (+pos2.y - pos1.y) * factor
+  outPos.z = +pos1.z + (+pos2.z - pos1.z) * factor
 }
 
 function distance(pos1, pos2) {
@@ -281,7 +282,7 @@ function init() {
     initCelestialBody(body, false)
   }
 
-  renderer = new THREE.WebGLRenderer({antialias: false, logarithmicDepthBuffer: true})
+  renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true})
   renderer.setClearColor(0)
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.setSize(window.innerWidth, window.innerHeight)
@@ -309,9 +310,21 @@ function init() {
     })
   })
 
-  fetch('http://192.168.2.106:3000/simulations').then(res => {
-    res.json().then(json => console.log(json))
-  })
+  function fetchSimulation() {
+    fetch('http://192.168.2.106:3000/simulations').then(res => {
+      res.json().then(json => {
+        console.log(json);
+        for (let msg of json.messages) {
+          onMessageUpdated({message: msg})
+        }
+      })
+    })
+  }
+
+  fetchSimulation()
+  setInterval(() => {
+    fetchSimulation()
+  }, SIM_FETCH_INTERVAL)
 }
 
 function initBackground() {
@@ -400,7 +413,7 @@ function initCelestialBody(params, isMsgNode = false) {
   return node
 }
 
-function onWebSocketData(evt) {
+function onMessageUpdated(evt) {
   let msg = _.find(state.msgs, {id: evt.message.id})
   let isNewMsg = !msg
 
@@ -411,7 +424,6 @@ function onWebSocketData(evt) {
     let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 40, 40)
     let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
     let mesh = new THREE.Mesh(geometry, material)
-    // lerpPos(mesh.position, earthPos, marsPos, 0.5)
 
     scene.add(mesh)
 
@@ -434,6 +446,7 @@ function onWebSocketData(evt) {
     }
 
     state.msgs.push({
+      id: msg.id,
       mesh,
       lines,
       lastBackendData: msg
@@ -573,7 +586,7 @@ function calcNodePosition(outPos, id, d) {
 function updateMessagePosition(msg) {
   let {mesh, lastBackendData} = msg
   const data = lastBackendData
-  let curTime = dayFractionToUnixTime(state.d)//new Date().getTime()// dayFractionToUnixTime(state.d)
+  let curTime = dayFractionToUnixTime(state.d)
 
   let lastReportNodeIndex = _.findIndex(data.path, {name: data.lastReport.name})
   let wasDelivered = lastReportNodeIndex >= data.path.length - 1
@@ -604,6 +617,10 @@ function updateMessagePosition(msg) {
       distSinceProbableLastNode -= distBetweenNodes
       ++curNodeIndex
     }
+  }
+
+  if (distBetweenNodes === 0) {
+    return true
   }
 
   let factorBetweenNodes = distSinceProbableLastNode / distBetweenNodes
