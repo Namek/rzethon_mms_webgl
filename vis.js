@@ -10,7 +10,9 @@ const
   NODE_RADIUS = 0.11,
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT, /*km per sec*/
-  SIM_FETCH_INTERVAL = 5000
+  SIM_FETCH_INTERVAL = 5000,
+  // BACKEND_URL = 'http://192.168.1.147:3001'
+  BACKEND_URL = 'http://192.168.2.106:3000'
 
 let container
 let camera, scene, renderer
@@ -27,6 +29,9 @@ let state = {
   timeFactor: 1,
   d: unixTimeToDayFraction(new Date().getTime()), //time in days since January 1st, 2000
   prevRenderTime: new Date().getTime(),
+  planetNodes: [
+    /* id, mesh */
+  ],
   msgNodes: [
     /* id, mesh */
   ],
@@ -164,9 +169,9 @@ preloadAssets().then(() => {
   animate()
 
   setTimeout(() => {
-    let earthPos = _.find(state.msgNodes, {id: 'earth'}).mesh.position
-    let marsPos = _.find(state.msgNodes, {id: 'mars'}).mesh.position
-    let venusPos = _.find(state.msgNodes, {id: 'venus'}).mesh.position
+    let earthPos = _.find(state.planetNodes, {id: 'earth'}).mesh.position
+    let marsPos = _.find(state.planetNodes, {id: 'mars'}).mesh.position
+    let venusPos = _.find(state.planetNodes, {id: 'venus'}).mesh.position
 
     let data = {
       id: "fjiof-fjioef-fejioef-fejio-fejio",
@@ -293,7 +298,7 @@ function init() {
   document.addEventListener('mousewheel', onDocumentMouseWheel, false)
   window.addEventListener('resize', onWindowResize, false)
 
-  fetch('http://192.168.2.106:3000/nodes').then(res => {
+  fetch(`${BACKEND_URL}/nodes`).then(res => {
     res.json().then(json => {
       for (let node of json.nodes) {
         const loc = node.location
@@ -306,12 +311,14 @@ function init() {
         mesh.position.y = loc.y
         mesh.position.z = loc.z
         scene.add(mesh)
+
+        state.msgNodes.push({ id: node.id, mesh })
       }
     })
   })
 
   function fetchSimulation() {
-    fetch('http://192.168.2.106:3000/simulations').then(res => {
+    fetch(`${BACKEND_URL}/simulations`).then(res => {
       res.json().then(json => {
         console.log(json);
         for (let msg of json.messages) {
@@ -405,7 +412,7 @@ function initCelestialBody(params, isMsgNode = false) {
 
     // save node
     node = {id, mesh}
-    state.msgNodes.push(node)
+    state.planetNodes.push(node)
   }
 
   scene.add(mesh)
@@ -525,7 +532,7 @@ function animate() {
 }
 
 function updatePositions() {
-  for (let node of state.msgNodes) {
+  for (let node of state.planetNodes) {
     updateNodePosition(node)
   }
 
