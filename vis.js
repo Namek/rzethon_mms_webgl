@@ -3,10 +3,10 @@
 document.addEventListener('DOMContentLoaded', () => {
 const
   DAY_MILLISECONDS = 24 * 60 * 60 * 1000,
-  CAMERA_ZOOM_SPEED = 0.04,
+  CAMERA_ZOOM_SPEED = 0.08*4,
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.0000004,
-  MESSAGE_RADIUS = 0.02,
+  MESSAGE_RADIUS = 0.04,
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT /*km per sec*/
 
@@ -145,16 +145,16 @@ let textures = {}, fonts = {}
 let $planets = [
   ['mercury', "Mercury", 'Mercury.jpg', 4900, 50, 1000],
   ['venus', "Venus", 'Venus.jpg', 12100, 30, 10000],
-  ['earth', "Earth", 'land_ocean_ice_cloud_2048.jpg', 12800, 50, 10000],
+  ['earth', "Earth", 'land_ocean_ice_cloud_2048.jpg', 12800, 30, 10000],
   ['mars', "Mars", 'Mars.jpg', 6800, 50, 10000],
   ['jupiter', "Jupilter", 'Jupiter.jpg', 143000, 10, 10000],
-  ['saturn', "Saturn", 'Saturn.jpg', 125000, 50, 10000],
-  ['uranus', "Uranus", 'Uranus.jpg', 51100, 10, 10000],
-  ['neptune', "Neptune", 'Neptune.jpg', 49500, 10, 10000]
+  ['saturn', "Saturn", 'Saturn.jpg', 125000, 40, 10800],
+  ['uranus', "Uranus", 'Uranus.jpg', 51100, 40, 38200],
+  ['neptune', "Neptune", 'Neptune.jpg', 49500, 40, 60000]
 ]
 
 let $otherBodies = [
-  ['sun', "Sun", 'Sun.jpg', 1391400/5]
+  ['sun', "Sun", 'Sun.jpg', 1391400, 0.37]
 ]
 
 preloadAssets().then(() => {
@@ -188,7 +188,7 @@ preloadAssets().then(() => {
     let earthToMarsTime = earthToMarsDist / (LIGHT_SPEED_AU*data.speedFactor) * 1000
     let flyTime = totalDist / LIGHT_SPEED_AU * 1000
 
-    data.lastReport.time = (new Date().getTime()) - earthToMarsTime/2
+    data.lastReport.time = (new Date().getTime())// - earthToMarsTime/2
     // lastBackendData.estimatedArrivalTime = new Date().getTime() + flyTime/2
 
     onWebSocketData({
@@ -227,6 +227,11 @@ function preloadAssets() {
   promises.push(loadTexture('Sun.jpg'))
   promises.push(loadTexture('Message.jpg'))
 
+  // background
+  promises.push(loadTexture('background/Space.jpg'))
+  for (let i = 1; i <= 5; ++i)
+    promises.push(loadTexture(`background/Layer${i}.png`))
+
   promises.push(loadFont('droid_sans_regular.typeface.json'))
 
   return Promise.all(promises)
@@ -262,6 +267,8 @@ function init() {
 
   scene = new THREE.Scene()
 
+  initBackground()
+
   for (let body of $planets) {
     let node = initCelestialBody(body, true)
   }
@@ -282,6 +289,34 @@ function init() {
   document.addEventListener('mousemove', onDocumentMouseMove, false)
   document.addEventListener('mousewheel', onDocumentMouseWheel, false)
   window.addEventListener('resize', onWindowResize, false)
+}
+
+function initBackground() {
+  // let spaceTex = textures['background/Space.jpg']
+  // let s = 1
+  // let geometry = new THREE.PlaneGeometry(16*s, 9*s)
+  // let material = new THREE.MeshBasicMaterial( {map: spaceTex, side: THREE.DoubleSide} );
+  // let plane = new THREE.Mesh( geometry, material )
+  // plane.position.z = -4
+  // scene.add(plane)
+
+
+  let geometry = new THREE.SphereGeometry(4000, 160, 90);
+  let uniforms = {
+    texture: { type: 't', value: THREE.ImageUtils.loadTexture('assets/background/Space.jpg') }
+  }
+
+  let material = new THREE.ShaderMaterial( {
+    uniforms:       uniforms,
+    vertexShader:   document.getElementById('sky-vertex').textContent,
+    fragmentShader: document.getElementById('sky-fragment').textContent
+  })
+
+  skyBox = new THREE.Mesh(geometry, material)
+  skyBox.scale.set(-1, 0.5, 0.9)
+  skyBox.eulerOrder = 'XZY'
+  skyBox.renderDepth = 10000000.0
+  scene.add(skyBox);
 }
 
 function initCelestialBody(params, isMsgNode = false) {
@@ -318,25 +353,26 @@ function initCelestialBody(params, isMsgNode = false) {
 
   scene.add(textMesh)*/
 
-  // orb
-  const D = 1
-  geometry = new THREE.Geometry()
-  material = new THREE.LineBasicMaterial({ color: 0xFFFFFF })
-  for (let d = 0, i = 0; d < orbDays; d += D, i += 3) {
-    let pos = {x: 0, y: 0, z: 0}
-    calcNodePosition(pos, id, d)
-    geometry.vertices.push(new THREE.Vector3(pos.x, pos.y, pos.z))
-  }
-  scene.add(new THREE.Line(geometry, material))
-
-  scene.add(mesh)
-
   let node = null
 
   if (isMsgNode) {
+    // orb
+    const D = 1
+    geometry = new THREE.Geometry()
+    material = new THREE.LineBasicMaterial({ color: 0xFFFFFF })
+    for (let d = 0, i = 0; d < orbDays; d += D, i += 3) {
+      let pos = {x: 0, y: 0, z: 0}
+      calcNodePosition(pos, id, d)
+      geometry.vertices.push(new THREE.Vector3(pos.x, pos.y, pos.z))
+    }
+    scene.add(new THREE.Line(geometry, material))
+
+    // save node
     node = {id, mesh}
     state.msgNodes.push(node)
   }
+
+  scene.add(mesh)
 
   return node
 }
