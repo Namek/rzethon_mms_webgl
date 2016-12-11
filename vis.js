@@ -298,9 +298,9 @@ function render() {
   const prevTime = state.prevRenderTime
   let deltaTime = (curTime - prevTime)/1000/60/60/24
 
-  // if (deltaTime > 500) {
-  //   deltaTime = 150
-  // }
+  if (curTime - prevTime > 500) {
+    deltaTime = 0.015/60/60/24 //15 ms
+  }
 
   state.d += (state.timeFactor * deltaTime)
   state.prevRenderTime = curTime
@@ -447,7 +447,7 @@ function updateMessagePosition(msg) {
 
   let factorBetweenNodes = distSinceProbableLastNode / distBetweenNodes
 
-  if (factorBetweenNodes >= 1) {
+  if (factorBetweenNodes >= 1 || curNodeIndex === data.path.length-1) {
     return true
   }
 
