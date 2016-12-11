@@ -6,7 +6,7 @@ const
   CAMERA_ZOOM_SPEED = 0.04,
   CAMERA_MAX_ZOOM = 150,
   PLANET_RADIUS_SCALE = 0.0000004,
-  MESSAGE_RADIUS = 0.01,
+  MESSAGE_RADIUS = 0.02,
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT /*km per sec*/
 
@@ -32,6 +32,7 @@ let state = {
     /*
      {
        mesh: {},
+       lines: [],
        lastBackendData: {
          "path": [
            {"name": "node1", "location": {"x": 1, "y": 1, "z": 1}},
@@ -193,7 +194,7 @@ preloadAssets().then(() => {
     onWebSocketData({
       message: data
     })
-  }, 2000)
+  }, 1000)
 })
 
 function loadTexture(filename) {
@@ -253,7 +254,7 @@ function pointToVector3(p) {
 function init() {
   container = document.getElementById('container')
 
-  camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 1, 2000)
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000)
   camera.position.z = 1.5
   camera.far = 100000
   camera.near = 0.000001
@@ -356,12 +357,8 @@ function onWebSocketData(evt) {
 
     scene.add(mesh)
 
-    state.msgs.push({
-      mesh,
-      lastBackendData: msg
-    })
-
     // now render lines!!111111 elo 3 2 0
+    let lines = []
     for (let nodeIndex = 0; nodeIndex < msg.path.length-1; ++nodeIndex) {
       let curNode = msg.path[nodeIndex]
       let nextNode = msg.path[nodeIndex+1]
@@ -371,11 +368,18 @@ function onWebSocketData(evt) {
         pointToVector3(curNode.location),
         pointToVector3(nextNode.location)
       )
-      geometry.colors = [new THREE.Color( 0x666666 ), new THREE.Color( 0x666666 )]
+      geometry.colors = [new THREE.Color( 0x999999 ), new THREE.Color( 0x00ff11 )]
       material = new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 1, linewidth: 2, vertexColors: THREE.VertexColors } );
       let line = new THREE.Line(geometry, material)
       scene.add(line)
+      lines.push(line)
     }
+
+    state.msgs.push({
+      mesh,
+      lines,
+      lastBackendData: msg
+    })
   }
   else {
     // TODO update msg!
@@ -463,6 +467,9 @@ function updatePositions() {
   for (let i = indicesToRemove.length-1; i >= 0; --i) {
     let msg = state.msgs[i]
     scene.remove(msg.mesh)
+    for (let line of msg.lines)
+      scene.remove(line)
+
     state.msgs.splice(i, 1)
   }
 }
