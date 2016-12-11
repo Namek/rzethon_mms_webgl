@@ -1,5 +1,7 @@
 // import * as _ from 'lodash'
 
+
+
 document.addEventListener('DOMContentLoaded', () => {
 const
   DAY_MILLISECONDS = 24 * 60 * 60 * 1000,
@@ -11,8 +13,8 @@ const
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT, /*km per sec*/
   SIM_FETCH_INTERVAL = 5000,
-  BACKEND_URL = 'http://192.168.1.147:3001'
-  // BACKEND_URL = 'http://192.168.2.106:3000'
+  // BACKEND_URL = 'http://192.168.1.147:3001'
+  BACKEND_URL = 'http://192.168.2.106:3000'
 
 let container
 let camera, scene, renderer
@@ -22,7 +24,8 @@ let windowHalfX = window.innerWidth / 2
 let windowHalfY = window.innerHeight / 2
 
 let viewState = {
-  scale: 1
+  scale: 1,
+  parallaxes: []
 }
 
 let state = {
@@ -345,15 +348,6 @@ function init() {
 }
 
 function initBackground() {
-  // let spaceTex = textures['background/Space.jpg']
-  // let s = 1
-  // let geometry = new THREE.PlaneGeometry(16*s, 9*s)
-  // let material = new THREE.MeshBasicMaterial( {map: spaceTex, side: THREE.DoubleSide} );
-  // let plane = new THREE.Mesh( geometry, material )
-  // plane.position.z = -4
-  // scene.add(plane)
-
-
   let geometry = new THREE.SphereGeometry(4000, 160, 90);
   let uniforms = {
     texture: { type: 't', value: THREE.ImageUtils.loadTexture('assets/background/Space.jpg') }
@@ -369,7 +363,35 @@ function initBackground() {
   skyBox.scale.set(-1, 0.5, 0.9)
   skyBox.eulerOrder = 'XZY'
   skyBox.renderDepth = 10000000.0
-  scene.add(skyBox);
+  scene.add(skyBox)
+
+  let layers = [ //width, height, x, y, z
+    [1280, 1273, 3, -12, -20],
+    [1600, 1200, -9, 2, -14],
+    [1600, 1200, -20, 8, -3],
+    [1000, 750, 12, 3, -10],
+    [1000, 713, 3, 2, -32]
+  ]
+
+  viewState.parallaxes = []
+
+  for (let i = 0; i < 5; ++i) {
+    let layer = layers[i]
+    let tex = textures[`background/Layer${i+1}.png`]
+    let s = 0.01
+    let geometry = new THREE.PlaneGeometry(layer[0]*s, layer[1]*s)
+    let material = new THREE.MeshBasicMaterial( {map: tex, side: THREE.DoubleSide, transparent: true} );
+    let plane = new THREE.Mesh(geometry, material)
+    plane.position.x = layer[2]
+    plane.position.y = layer[3]
+    plane.position.z = layer[4]
+    scene.add(plane)
+
+    viewState.parallaxes.push({
+      layer: layers[i],
+      plane
+    })
+  }
 }
 
 function initCelestialBody(params, isMsgNode = false) {
@@ -490,7 +512,7 @@ function render() {
 
   if (state.isLeftMouseButtonDown) {
     camera.position.x -= (mouseX - camera.position.x) * 0.0001
-    camera.position.y -= (mouseY - camera.position.y) * 0.0001
+    camera.position.y += (mouseY - camera.position.y) * 0.0001
 
     if (state.isArrowDownDown)
       camera.lookAt(scene.position)
