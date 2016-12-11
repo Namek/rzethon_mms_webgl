@@ -3,28 +3,27 @@
 document.addEventListener('DOMContentLoaded', () => {
 const
   DAY_MILLISECONDS = 24 * 60 * 60 * 1000,
-  CAMERA_ZOOM_SPEED = 1000,
+  CAMERA_ZOOM_SPEED = 100,
   CAMERA_MAX_ZOOM = 150,
-  PLANET_RADIUS_SCALE = 0.0001,
-  MESSAGE_RADIUS = 20,
+  PLANET_RADIUS_SCALE = 0.000001,
+  MESSAGE_RADIUS = 0.00001,
   ASTRONOMICAL_UNIT = 149597870.7, //km
   LIGHT_SPEED_AU = 299792.458 / ASTRONOMICAL_UNIT /*km per sec*/
 
 let container
 let camera, scene, renderer
-let group
 let mouseX = 0, mouseY = 0
 
 let windowHalfX = window.innerWidth / 2
 let windowHalfY = window.innerHeight / 2
 
 let viewState = {
-  scale: 500
+  scale: 1
 }
 
 let state = {
   timeFactor: 1,
-  d: unixTimeToDayFraction(new Date().getTime()),
+  d: unixTimeToDayFraction(new Date().getTime()), //time in days since January 1st, 2000
   prevRenderTime: new Date().getTime(),
   msgNodes: [
     /* id, mesh */
@@ -202,15 +201,13 @@ function distance(pos1, pos2) {
 function init() {
   container = document.getElementById('container')
 
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000)
-  camera.position.z = 2000
+  camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 1, 2000)
+  camera.position.z = 1
   camera.far = 100000
-  camera.near = 1
+  camera.near = 0.000001
   camera.updateProjectionMatrix()
 
   scene = new THREE.Scene()
-  group = new THREE.Group()
-  scene.add(group)
 
   for (let body of $planets) {
     let node = initCelestialBody(body, true)
@@ -220,33 +217,41 @@ function init() {
 
   let earthPos = _.find(state.msgNodes, {id: 'earth'}).mesh.position
   let marsPos = _.find(state.msgNodes, {id: 'mars'}).mesh.position
+  let venusPos = _.find(state.msgNodes, {id: 'venus'}).mesh.position
 
   let lastBackendData = {
     path: [
       {name: "earth1", location: {x: earthPos.x, y: earthPos.y, z: earthPos.z}},
-      {name: "mars1", location: {x: marsPos.x, y: marsPos.y, z: marsPos.z}}
+      {name: "mars1", location: {x: marsPos.x, y: marsPos.y, z: marsPos.z}},
+      {name: "venus1", location: {x: venusPos.x, y: venusPos.y, z: venusPos.z}}
     ],
     lastReport: {
       name: 'earth1',
-      time: new Date().getTime()-1000*60*60
+      time: null//to be calculated
     },
     speedFactor: 1,
     estimatedArrivalTime: 0 // to be calculated
   }
 
+  console.log(lastBackendData.path);
 
-  let flyTime = distance(lastBackendData.path[0].location, lastBackendData.path[1].location)
-    / LIGHT_SPEED_AU * 1000
-  lastBackendData.lastReport.time = new Date().getTime() - flyTime/3
-  lastBackendData.estimatedArrivalTime = new Date().getTime()+1000*60*60
+  let earthToMarsDist = distance(lastBackendData.path[0].location, lastBackendData.path[1].location)
+  let marsToVenusDist = distance(lastBackendData.path[1].location, lastBackendData.path[2].location)
+  let totalDist = earthToMarsDist + marsToVenusDist
+  console.log(earthToMarsDist);
+  let earthToMarsTime = earthToMarsDist / LIGHT_SPEED_AU * 1000
+  let flyTime = totalDist / LIGHT_SPEED_AU * 1000
+
+  lastBackendData.lastReport.time = (new Date().getTime()) - earthToMarsTime/3
+  // lastBackendData.estimatedArrivalTime = new Date().getTime() + flyTime/2
 
   let texture = textures["Message.jpg"]
   let geometry = new THREE.SphereGeometry(MESSAGE_RADIUS, 20, 20)
   let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
   let mesh = new THREE.Mesh(geometry, material)
-  lerpPos(mesh.position, earthPos, marsPos, 0.5)
+  // lerpPos(mesh.position, earthPos, marsPos, 0.5)
 
-  group.add(mesh)
+  scene.add(mesh)
 
   state.msgs.push({
     mesh,
@@ -272,11 +277,11 @@ function init() {
 function initCelestialBody(params, isMsgNode = false) {
   const [id, textureFilename, diameter, scale] = params
   let texture = textures[textureFilename]
-  let geometry = new THREE.SphereGeometry(PLANET_RADIUS_SCALE * diameter * scale, 20, 20)
+  let geometry = new THREE.SphereGeometry(PLANET_RADIUS_SCALE * diameter /* scale*/, 20, 20)
   let material = new THREE.MeshBasicMaterial({ map: texture, overdraw: 1 })
   let mesh = new THREE.Mesh(geometry, material)
 
-  group.add(mesh)
+  scene.add(mesh)
 
   let node = null
 
@@ -291,17 +296,20 @@ function initCelestialBody(params, isMsgNode = false) {
 function render() {
   const curTime = new Date().getTime()
   const prevTime = state.prevRenderTime
-  const deltaTime = (curTime - prevTime)/1000
+  let deltaTime = (curTime - prevTime)/1000/60/60/24
+
+  // if (deltaTime > 500) {
+  //   deltaTime = 150
+  // }
+
   state.d += (state.timeFactor * deltaTime)
   state.prevRenderTime = curTime
-
-  // group.rotation.y -= 0.005
 
   updatePositions()
 
 
-  camera.position.x += (mouseX - camera.position.x) * 0.05
-  camera.position.y += (- mouseY - camera.position.y) * 0.05
+  // camera.position.x += (mouseX - camera.position.x) * 0.05
+  // camera.position.y += (- mouseY - camera.position.y) * 0.05
   camera.lookAt(scene.position)
   camera.updateProjectionMatrix()
 
@@ -337,9 +345,9 @@ function onDocumentMouseMove(evt) {
 function onDocumentMouseWheel(evt) {
   let z = camera.position.z + CAMERA_ZOOM_SPEED * Math.sign(evt.deltaY)
 
-  if (z < CAMERA_MAX_ZOOM) {
-    z = CAMERA_MAX_ZOOM
-  }
+  // if (z < CAMERA_MAX_ZOOM) {
+  //   z = CAMERA_MAX_ZOOM
+  // }
 
   camera.position.z = z
   camera.updateProjectionMatrix()
@@ -363,10 +371,7 @@ function updatePositions() {
   }
   for (let i = indicesToRemove.length-1; i >= 0; --i) {
     let msg = state.msgs[i]
-    let meshIndex = group.children.indexOf(msg.mesh)
-    console.log(meshIndex);
-    console.log(msg.mesh);
-    group.children.splice(group.children, meshIndex)
+    scene.remove(msg.mesh)
     state.msgs.splice(i, 1)
   }
 }
@@ -405,7 +410,7 @@ function updateNodePosition(node) {
 function updateMessagePosition(msg) {
   let {mesh, lastBackendData} = msg
   const data = lastBackendData
-  let curTime = dayFractionToUnixTime(state.d)
+  let curTime = new Date().getTime()// dayFractionToUnixTime(state.d)
 
   let lastReportNodeIndex = _.findIndex(data.path, {name: data.lastReport.name})
   let wasDelivered = lastReportNodeIndex >= data.path.length - 1
@@ -420,6 +425,7 @@ function updateMessagePosition(msg) {
   let curNodeIndex = lastReportNodeIndex
 
   let distSinceLastReport = (curTime - lastReportTime)/1000 * lastBackendData.speedFactor * LIGHT_SPEED_AU
+  let distSinceProbableLastNode = distSinceLastReport
   let distBetweenNodes = null
 
   while (curNodeIndex < data.path.length-1) {
@@ -427,12 +433,12 @@ function updateMessagePosition(msg) {
     nextNode = data.path[curNodeIndex+1]
     distBetweenNodes = distance(curNode.location, nextNode.location)
 
-    if (distSinceLastReport - distBetweenNodes < 0) {
+    if (distSinceProbableLastNode - distBetweenNodes < 0) {
       // `curNode` is the last node which should have been visited already now
       break
     }
     else {
-      distSinceLastReport -= distBetweenNodes
+      distSinceProbableLastNode -= distBetweenNodes
       ++curNodeIndex
     }
   }
@@ -466,12 +472,17 @@ function unixTimeToDayFraction(u) {
   return d + dayFraction
 }
 
-const DIFF_2000_1970 = moment('2000-01-01').diff('1970-01-01', 'milliseconds')
+const DIFF_2000_1970 = moment('2000-01-01').diff('1970-01-01', 'ms') - 3600000
 function dayFractionToUnixTime(d) {
-  return d*24*60*60*1000 + DIFF_2000_1970
+  return d * DAY_MILLISECONDS + DIFF_2000_1970
+  // TODO coś tu źle jest :(
 }
 
-console.log(unixTimeToDayFraction(1481382583000))
+// console.log(unixTimeToDayFraction(new Date().getTime()))
+console.log(
+  dayFractionToUnixTime(0),  moment('2000-01-01').unix()*1000,
+  dayFractionToUnixTime(0) - moment('2000-01-01').unix()*1000
+)
 
 
 function getOrbitals(planet, d) {
